@@ -1,0 +1,19 @@
+iwgetid
+
+nmcli connection show
+#nmcli connection show TP-LINK_0E03EA
+nmcli -f GENERAL,WIFI-PROPERTIES dev show wlp109s0
+
+nmcli dev wifi
+
+watch -n1 iwconfig
+alias wl="watch -n 1 cat /proc/net/wireless"
+#watch -n 1 "awk 'NR==3 {print \"WiFi Signal Strength = \" \$3 \"00 %\"}''' /proc/net/wireless"
+cat /proc/net/wireless
+
+iwconfig wlp109s0 | grep -i --color quality
+iwconfig wlp109s0 | grep -i --color signal
+
+wavemon
+
+
