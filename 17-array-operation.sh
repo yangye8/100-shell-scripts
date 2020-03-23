@@ -47,5 +47,3 @@ MYARR=(AA BB CC DD EE)
 unset MYARR
 echo $MYARR
 echo ""
-
-
