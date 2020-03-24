@@ -13,3 +13,30 @@
 [submodule "projects/bash-concurrent"]
 	path = projects/bash-concurrent
 	url = https://github.com/themattrix/bash-concurrent
+[submodule "projects/demo-magic"]
+	path = projects/demo-magic
+	url = https://github.com/paxtonhare/demo-magic
+[submodule "projects/bashful"]
+	path = projects/bashful
+	url = https://github.com/jmcantrell/bashful
+[submodule "projects/simple-bash-scripts"]
+	path = projects/simple-bash-scripts
+	url = https://github.com/ruanyf/simple-bash-scripts
+[submodule "projects/bootiso"]
+	path = projects/bootiso
+	url = https://github.com/jsamr/bootiso
+[submodule "projects/linux-cheatsheet"]
+	path = projects/linux-cheatsheet
+	url = https://github.com/gto76/linux-cheatsheet
+[submodule "projects/bash-commons"]
+	path = projects/bash-commons
+	url = https://github.com/gruntwork-io/bash-commons
+[submodule "projects/now"]
+	path = projects/now
+	url = https://github.com/apankrat/now.sh
+[submodule "projects/shell-scripts"]
+	path = projects/shell-scripts
+	url = https://github.com/natelandau/shell-scripts
+[submodule "projects/bash-script-template"]
+	path = projects/bash-script-template
+	url = https://github.com/ralish/bash-script-template
