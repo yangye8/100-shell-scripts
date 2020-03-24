@@ -7,3 +7,8 @@ git filter-branch -f --prune-empty --index-filter 'git rm -rf --cached --ignore-
 git filter-branch -f --prune-empty --index-filter 'git rm -rf --cached --ignore-unmatch <file>' --tag-name-filter cat -- --all
 git push origin --force --all
 
+#submodule
+git submodule add <url> <path>
+git commit -am ""
+git push
+git clone <url> --recursive

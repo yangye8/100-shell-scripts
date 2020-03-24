@@ -10,3 +10,6 @@
 [submodule "bash-guide/awesome-bash"]
 	path = bash-guide/awesome-bash
 	url = https://github.com/awesome-lists/awesome-bash
+[submodule "projects/bash-concurrent"]
+	path = projects/bash-concurrent
+	url = https://github.com/themattrix/bash-concurrent
