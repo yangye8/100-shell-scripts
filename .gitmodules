@@ -1,0 +1,3 @@
+[submodule "projects/bash3boilerplate"]
+	path = projects/bash3boilerplate
+	url = https://github.com/kvz/bash3boilerplate
