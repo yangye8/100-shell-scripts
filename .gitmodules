@@ -7,3 +7,6 @@
 [submodule "bash-guide/bash-guide"]
 	path = bash-guide/bash-guide
 	url = https://github.com/Idnan/bash-guide
+[submodule "bash-guide/awesome-bash"]
+	path = bash-guide/awesome-bash
+	url = https://github.com/awesome-lists/awesome-bash
