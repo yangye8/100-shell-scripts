@@ -1,2 +1,2 @@
 # 100-shell-scripts
-100-shell-scripts record 
+A collection of small bash scripts for heavy terminal users with no dependencies
