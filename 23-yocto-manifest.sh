@@ -71,6 +71,9 @@ https://git.yoctoproject.org/git/meta-fsl-arm
 https://git.yoctoproject.org/git/git-submodule-test
 )
 
+[ ! -d "yocto" ] && mkdir yocto
+cd yocto
+
 git config --global --unset https.proxy
 git config --list
 
@@ -80,7 +83,7 @@ do
     echo $layer
     if [ ! -d $layer ]
     then
-        git gc && git clone $repo 
+        git clone $repo 
     else
         git pull
     fi
