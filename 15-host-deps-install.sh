@@ -85,6 +85,35 @@ RH_LIST=(\
 )
 
 UB_LIST=(\
+    dos2unix \
+    iproute2 \
+    gawk \
+    make \
+    net-tools \
+    libncurses5 \
+    tftpd \
+    zlib1g:i386 \
+    flex \
+    bison \
+    libssl-dev \
+    gnupg \
+    libselinux1 \
+    wget \
+    diffstat \
+    socat \
+    chrpath \
+    xterm \
+    tar \
+    autoconf \
+    libtool \
+    unzip \
+    texinfo \
+    zlib1g-dev \
+    gcc-multilib \
+    build-essential \
+    screen \
+    pax \
+    gzip \
      cmake \
      cppcheck \
      curl \
@@ -116,7 +145,6 @@ UB_LIST=(\
      opencl-headers \
      ocl-icd-opencl-dev \
      perl \
-     python \
      pciutils \
      pkg-config \
      protobuf-compiler \
