@@ -9,6 +9,11 @@ git push origin --force --all
 
 #submodule
 git submodule add <url> <path>
-git commit -am ""
+git commit -am "xxx"
 git push
 git clone <url> --recursive
+# update submodule
+git submodule foreach git checkout master
+git submodule foreach git pull
+#submodule clone
+git clone <repository> --recursive
