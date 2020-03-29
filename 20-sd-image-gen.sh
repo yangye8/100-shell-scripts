@@ -8,8 +8,9 @@ debug_mode='0'
 
 IMG="$(date +%F-%T).img"
 ROOTFS="rootfs"
-BOOT_DIM=400
-FREELO="$( losetup -f)"
+# Boot partition size [in KiB]
+BOOT_SPACE="524288"
+BOOT_DIM=512
 
 trap "printf \"\n%s\n\" exit ;exit" INT
 
@@ -38,7 +39,6 @@ debug() {
 }
 
 file_must_exists() {
-
     # throw error on non-zero return value
     if [ ! -e "$1" ]; then
         error "You must have '$1' file to continue."
@@ -73,8 +73,7 @@ lodetach () {
      losetup -d "${DEVICE}" || lodetach "${DEVICE}" "$(expr ${ATTEMPT} + 1)"
 }
 
-privs ()
-{
+privs () {
 	if [ "$(id -u)" != 0 ]; then
 		echo "Sorry, $0 must be run as root."
 		exit 1
@@ -111,28 +110,18 @@ mkpart_mkfs () {
 }
 
 boot_cp () {
-    #if [ -e "$1" ] || [ -e "$2" ] || [ -e "$3" ] || [ -e "$4" ]; then
         mkdir -p binary.tmp
         mount ${FREELO}p1 binary.tmp
-        echo pwd
-        set +x
-        cp -r `ls | grep -v rootfs.tar.gz | xargs` binary.tmp
-        set -x
-        #cp -fr $1 binary.tmp
-        #cp -fr $2 binary.tmp
-        #cp -fr $3 binary.tmp
-        #cp -fr $4 binary.tmp
         umount binary.tmp
 
         ret="$?"
         success "Copying $1 $2 $3 $4 to fat32 partition"
         debug
-   #fi
     }
 
 rootfs_cp () {
      mount ${FREELO}p2 binary.tmp
-     tar -xzf $1 -C binary.tmp
+     tar -xf $1 -C binary.tmp
 
     sync && sync && sleep 1
 
@@ -168,7 +157,7 @@ usage ()
 ############################ MAIN()
 
 clean_work_area () {
-    [ -d ${ROOTFS} ]    && rm -rf ${ROOTFS}
+    [ -d ${ROOTFS} ] && rm -rf ${ROOTFS}
 
     if mount | grep "binary.tmp" >/dev/null 2>&1;
     then
@@ -179,32 +168,128 @@ clean_work_area () {
     rm -rf *.img
 }
 
+tgz2ext4() {
+    local OUT=$(echo $1 | cut -d '.' -f '1').ext4
+    local MOUNT_POINT="mnt"
+    local ROOTFS="rootfs"
+
+    if [ ! -d $ROOTFS ];then
+        mkdir $ROOTFS
+        tar -zxf $1 -C $ROOTFS
+    fi
+
+    ROOTFS_SIZE=$(du -s $ROOTFS | cut -f '1')
+    ROOTFS_SIZE=$(expr $ROOTFS_SIZE + 102400)
+
+    dd if=/dev/zero of=$OUT bs=1024 count=$ROOTFS_SIZE >/dev/null 2>&1
+
+    mkfs.ext4 -F -L "ROOTFS" $OUT >/dev/null 2>&1
+
+    [ ! -d "$MOUNT_POINT" ] && mkdir $MOUNT_POINT
+
+    sudo mount $OUT $MOUNT_POINT
+    sudo tar -zxf $1 -C $MOUNT_POINT && sync && sync
+    sudo umount $MOUNT_POINT
+
+    rm -rf $ROOTFS
+}
+
+main4tgz () {
+
+    FREELO="$( losetup -f)"
+    calc_space       "rootfs.tar.gz"
+    mkpart_mkfs
+    boot_cp
+    rootfs_cp        "rootfs.tar.gz"
+    finalize
+    clean_work_area
+    msg             "\nSD-card image $IMG.zip done"
+    msg             "© `date +%Y`"
+}
+
+main4ext4 () {
+    # Set alignment to 4MB [in KiB]
+    IMAGE_ROOTFS_ALIGNMENT="4096"
+
+    # Align partitions
+    BOOT_SPACE_ALIGNED=$(expr ${BOOT_SPACE} + ${IMAGE_ROOTFS_ALIGNMENT} - 1)
+    BOOT_SPACE_ALIGNED=$(expr ${BOOT_SPACE_ALIGNED} - ${BOOT_SPACE_ALIGNED} % ${IMAGE_ROOTFS_ALIGNMENT})
+    ROOTFS_SIZE=$(du -s $1 | cut -f '1')
+    SDIMG_SIZE=$(expr ${IMAGE_ROOTFS_ALIGNMENT} + ${BOOT_SPACE_ALIGNED} + ${ROOTFS_SIZE} + ${IMAGE_ROOTFS_ALIGNMENT})
+
+    # Initialize sdcard image file
+    dd if=/dev/zero of=${IMG} bs=1 count=0 seek=$(expr 1024 \* ${SDIMG_SIZE}) >/dev/null 2>&1
+
+    # Create partition table
+    parted -s ${IMG} mklabel msdos
+    # Create boot partition and mark it as bootable
+    parted -s ${IMG} unit KiB mkpart primary fat32 ${IMAGE_ROOTFS_ALIGNMENT} \
+        $(expr ${BOOT_SPACE_ALIGNED} \+ ${IMAGE_ROOTFS_ALIGNMENT})
+    parted -s ${IMG} set 1 boot on
+    parted -s ${IMG} set 1 lba  off
+    # Create rootfs partition
+    parted -s ${IMG} unit KiB mkpart primary ext4 $(expr ${BOOT_SPACE_ALIGNED} \+ ${IMAGE_ROOTFS_ALIGNMENT}) \
+        $(expr ${BOOT_SPACE_ALIGNED} \+ ${IMAGE_ROOTFS_ALIGNMENT} \+ ${ROOTFS_SIZE})
+
+	# Create boot partition image
+	BOOT_BLOCKS=$(LC_ALL=C parted -s ${IMG} unit b print \
+	                  | awk "/ 1 / { print substr(\$4, 1, length(\$4 -1)) / 1024 }")
+
+	# mkdosfs will sometimes use FAT16 when it is not appropriate,
+	# resulting in a boot failure from SYSLINUX. Use FAT32 for
+	# images larger than 512MB, otherwise let mkdosfs decide.
+	if [ $(expr $BOOT_BLOCKS / 1024) -gt 512 ]; then
+		FATSIZE="-F 32"
+	fi
+
+    if [ -f boot.img ]; then
+       rm -f boot.img
+    fi
+	mkfs.vfat -n "BOOT" -S 512 ${FATSIZE} -C boot.img $BOOT_BLOCKS >/dev/null
+
+    # Add stamp file
+    mcopy -i boot.img -v BOOT.BIN ::
+    mcopy -i boot.img -v Image ::
+
+    # Burn Partitions
+    dd if=boot.img of=${IMG} conv=notrunc seek=1 bs=$(expr ${IMAGE_ROOTFS_ALIGNMENT} \* 1024) >/dev/null 2>&1 && sync && sync 
+    dd if=$1 of=${IMG} conv=notrunc seek=1 bs=$(expr 1024 \* ${BOOT_SPACE_ALIGNED} + ${IMAGE_ROOTFS_ALIGNMENT} \* 1024) >/dev/null 2>&1 && sync && sync
+    parted ${IMG} print
+
+    rm -rf boot.img 
+
+    finalize
+    msg             "\nSD-card image $IMG.zip done"
+    msg             "© `date +%Y`"
+}
+
 main () {
 
     trap "echo; echo -n Removing work area...; clean_work_area; echo exit;exit" INT
 
-    privs
-
     file_must_exists "BOOT.BIN"
     file_must_exists "dpu.xclbin"
-    file_must_exists "image.ub"
-    file_must_exists "rootfs.tar.gz"
-    
-    calc_space       "rootfs.tar.gz"
 
-    mkpart_mkfs
-    boot_cp
-    #boot_cp          "BOOT.BIN" \
-                     #"dpu.xclbin" \
-                     #"image.ub" \
-                     #"*_base.hwh"
-    
-    rootfs_cp        "rootfs.tar.gz"
-    
-    finalize
-    
-    msg             "\nSD-card image $IMG.zip done"
-    msg             "© `date +%Y`"
+    for f in ./*
+    do
+        if [ -f $f ];then
+            case ${f%i,} in
+                *.ext4)
+                    file_must_exists "rootfs.ext4"
+                    file_must_exists "Image"
+                    main4ext4 $f 
+                    return 0
+                    ;;
+                *.cbt|*.tar.bz2|*.tar.gz|*.tar.xz|*.tbz2|*.tgz|*.txz|*.tar)
+                    privs
+                    file_must_exists "image.ub"
+                    file_must_exists "rootfs.tar.gz"
+                    main4tgz $f
+                    return 0
+                    ;;
+            esac
+        fi
+    done
 }
 
 main "$@"
