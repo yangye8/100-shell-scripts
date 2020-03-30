@@ -46,3 +46,6 @@
 [submodule "projects/progress-bar"]
 	path = projects/progress-bar
 	url = https://github.com/edouard-lopez/progress-bar.sh
+[submodule "projects/bash-it"]
+	path = projects/bash-it
+	url = https://github.com/Bash-it/bash-it.git
