@@ -43,3 +43,6 @@
 [submodule "projects/bash-it"]
 	path = projects/bash-it
 	url = https://github.com/Bash-it/bash-it.git
+[submodule "bash-guide/bash-notebook"]
+	path = bash-guide/bash-notebook
+	url = https://github.com/yangye8/bash-notebook
